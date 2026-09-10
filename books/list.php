@@ -40,7 +40,9 @@ if (isset($_SESSION['success'])) {
 
 <div class="d-flex justify-content-between align-items-center flex-wrap">
     <h1 class="page-title mb-3">Books</h1>
+    <?php if ($isAdmin): ?>
     <a href="add.php" class="btn btn-primary mb-3"><i class="bi bi-bookmark-plus me-1"></i> Add Book</a>
+    <?php endif; ?>
 </div>
 
 <!-- Search -->
@@ -71,7 +73,9 @@ if (isset($_SESSION['success'])) {
                         <th>Total</th>
                         <th>Available</th>
                         <th>Status</th>
+                        <?php if ($isAdmin): ?>
                         <th>Action</th>
+                        <?php endif; ?>
                     </tr>
                 </thead>
                 <tbody>
@@ -93,15 +97,17 @@ if (isset($_SESSION['success'])) {
                                         <span class="badge bg-danger">Unavailable</span>
                                     <?php endif; ?>
                                 </td>
+                                <?php if ($isAdmin): ?>
                                 <td>
                                     <a href="edit.php?id=<?php echo $b['id']; ?>" class="btn btn-sm btn-outline-primary">
                                         <i class="bi bi-pencil"></i>
                                     </a>
                                 </td>
+                                <?php endif; ?>
                             </tr>
                         <?php endwhile; ?>
                     <?php else: ?>
-                        <tr><td colspan="10" class="text-center text-muted py-4">No books found.</td></tr>
+                        <tr><td colspan="<?php echo $isAdmin ? 10 : 9; ?>" class="text-center text-muted py-4">No books found.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>

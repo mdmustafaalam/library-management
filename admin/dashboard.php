@@ -6,6 +6,7 @@
 // =====================================================
 
 require_once '../includes/auth.php';
+requireAdmin();
 require_once '../config/db.php';
 
 // Update overdue transactions whenever the dashboard loads

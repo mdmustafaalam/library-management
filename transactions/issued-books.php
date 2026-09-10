@@ -12,14 +12,29 @@ require_once '../config/helpers.php';
 // Update overdue status whenever this page loads
 mysqli_query($conn, "UPDATE transactions SET status = 'Overdue' WHERE status = 'Issued' AND due_date < CURDATE()");
 
-$result = mysqli_query($conn,
-    "SELECT t.*, m.member_code, m.name AS member_name, b.book_code, b.title
-     FROM transactions t
-     INNER JOIN members m ON t.member_id = m.id
-     INNER JOIN books b ON t.book_id = b.id
-     WHERE t.status IN ('Issued', 'Overdue')
-     ORDER BY t.id DESC"
-);
+if ($isAdmin) {
+    $result = mysqli_query($conn,
+        "SELECT t.*, m.member_code, m.name AS member_name, b.book_code, b.title
+         FROM transactions t
+         INNER JOIN members m ON t.member_id = m.id
+         INNER JOIN books b ON t.book_id = b.id
+         WHERE t.status IN ('Issued', 'Overdue')
+         ORDER BY t.id DESC"
+    );
+} else {
+    $memberId = (int)$_SESSION['user_id'];
+    $stmt = mysqli_prepare($conn,
+        "SELECT t.*, m.member_code, m.name AS member_name, b.book_code, b.title
+         FROM transactions t
+         INNER JOIN members m ON t.member_id = m.id
+         INNER JOIN books b ON t.book_id = b.id
+         WHERE t.status IN ('Issued', 'Overdue') AND t.member_id = ?
+         ORDER BY t.id DESC"
+    );
+    mysqli_stmt_bind_param($stmt, "i", $memberId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+}
 
 include '../includes/header.php';
 include '../includes/sidebar.php';
@@ -32,7 +47,9 @@ if (isset($_SESSION['success'])) {
 
 <div class="d-flex justify-content-between align-items-center flex-wrap">
     <h1 class="page-title mb-3">Issued Books</h1>
+    <?php if ($isAdmin): ?>
     <a href="issue-book.php" class="btn btn-primary mb-3"><i class="bi bi-arrow-right-circle me-1"></i> Issue Book</a>
+    <?php endif; ?>
 </div>
 
 <div class="card">
@@ -49,7 +66,9 @@ if (isset($_SESSION['success'])) {
                         <th>Issue Date</th>
                         <th>Due Date</th>
                         <th>Status</th>
+                        <?php if ($isAdmin): ?>
                         <th>Action</th>
+                        <?php endif; ?>
                     </tr>
                 </thead>
                 <tbody>
@@ -70,16 +89,18 @@ if (isset($_SESSION['success'])) {
                                         <span class="badge bg-primary">Issued</span>
                                     <?php endif; ?>
                                 </td>
+                                <?php if ($isAdmin): ?>
                                 <td>
                                     <a href="return-book.php?id=<?php echo $t['id']; ?>"
                                        class="btn btn-sm btn-success" data-confirm="Return this book?">
                                         <i class="bi bi-arrow-return-left me-1"></i> Return
                                     </a>
                                 </td>
+                                <?php endif; ?>
                             </tr>
                         <?php endwhile; ?>
                     <?php else: ?>
-                        <tr><td colspan="9" class="text-center text-muted py-4">No issued books found.</td></tr>
+                        <tr><td colspan="<?php echo $isAdmin ? 9 : 8; ?>" class="text-center text-muted py-4">No issued books found.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>

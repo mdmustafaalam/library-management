@@ -19,6 +19,20 @@ if (!$isLoggedIn) {
     exit;
 }
 
+// Determine role
+$userType = $_SESSION['user_type'] ?? 'admin';
+$isAdmin  = ($userType === 'admin');
+
+// Helper: restrict page to admin only
+function requireAdmin()
+{
+    global $isAdmin;
+    if (!$isAdmin) {
+        header("Location: " . getBaseUrl() . "member/dashboard.php");
+        exit;
+    }
+}
+
 // Helper to build the correct base URL for root pages
 function getBaseUrl()
 {

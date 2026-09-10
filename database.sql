@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS admins (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     email VARCHAR(150) NOT NULL UNIQUE,
+    phone VARCHAR(20) NULL,
+    department VARCHAR(100) NULL,
     password VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -119,9 +121,11 @@ CREATE TABLE IF NOT EXISTS otps (
 -- Password: admin123
 -- (generated with password_hash)
 -- -----------------------------------------------------
-INSERT INTO admins (name, email, password)
+INSERT INTO admins (name, email, phone, department, password)
 VALUES (
     'Administrator',
     'admin@library.com',
+    NULL,
+    NULL,
     '$2y$10$4Ia7Q5NVaP6IIP7kjtWIBO14J4c8jwUs/7lktEp9zpUS8U1Srdpwi'
 );

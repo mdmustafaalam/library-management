@@ -1,57 +1,73 @@
 <?php
 // =====================================================
-// admin/profile.php
-// View and update the logged-in admin's name and email.
-// After updating, the session values are also refreshed.
+// member/profile.php
+// Member profile - view and update own name, email,
+// phone and address. Member code and status are read-only.
 // =====================================================
 
 require_once '../includes/auth.php';
-requireAdmin();
-require_once '../config/db.php';
-require_once '../config/helpers.php';
 
-$adminId = (int)$_SESSION['admin_id'];
-
-// Fetch current details
-$stmt = mysqli_prepare($conn, "SELECT id, name, email, phone, department, created_at FROM admins WHERE id = ?");
-mysqli_stmt_bind_param($stmt, "i", $adminId);
-mysqli_stmt_execute($stmt);
-$admin = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
-
-if (!$admin) {
-    $_SESSION['success'] = "Admin not found.";
-    header("Location: ../login.php");
+// Members only - admins use admin/profile.php
+if ($isAdmin) {
+    header("Location: " . getBaseUrl() . "admin/profile.php");
     exit;
 }
 
-$errors = [];
-$name  = $admin['name'];
-$email = $admin['email'];
-$phone = $admin['phone'] ?? '';
-$department = $admin['department'] ?? '';
+require_once '../config/db.php';
+require_once '../config/helpers.php';
+
+$memberId = (int)$_SESSION['user_id'];
+
+$stmt = mysqli_prepare($conn, "SELECT * FROM members WHERE id = ?");
+mysqli_stmt_bind_param($stmt, "i", $memberId);
+mysqli_stmt_execute($stmt);
+$member = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+
+if (!$member) {
+    $_SESSION['success'] = "Member not found.";
+    header("Location: ../logout.php");
+    exit;
+}
+
+$errors  = [];
+$name    = $member['name'];
+$email   = $member['email'];
+$phone   = $member['phone'];
+$address = $member['address'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $name  = trim($_POST['name'] ?? '');
-    $email = trim($_POST['email'] ?? '');
-    $phone = trim($_POST['phone'] ?? '');
-    $department = trim($_POST['department'] ?? '');
+    $name    = trim($_POST['name'] ?? '');
+    $email   = trim($_POST['email'] ?? '');
+    $phone   = trim($_POST['phone'] ?? '');
+    $address = trim($_POST['address'] ?? '');
 
     if ($name === '') $errors[] = 'Name is required.';
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Please enter a valid email address.';
+    if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Please enter a valid email address.';
+
+    // Check for duplicate email excluding current member
+    if ($email !== '') {
+        $stmt = mysqli_prepare($conn, "SELECT id FROM members WHERE email = ? AND id != ?");
+        mysqli_stmt_bind_param($stmt, "si", $email, $memberId);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_store_result($stmt);
+        if (mysqli_stmt_num_rows($stmt) > 0) {
+            $errors[] = 'This email is already used by another member.';
+        }
+    }
 
     if (empty($errors)) {
-        $stmt = mysqli_prepare($conn, "UPDATE admins SET name = ?, email = ?, phone = ?, department = ? WHERE id = ?");
-        mysqli_stmt_bind_param($stmt, "ssssi", $name, $email, $phone, $department, $adminId);
+        $stmt = mysqli_prepare($conn,
+            "UPDATE members SET name = ?, email = ?, phone = ?, address = ? WHERE id = ?"
+        );
+        mysqli_stmt_bind_param($stmt, "ssssi", $name, $email, $phone, $address, $memberId);
 
         if (mysqli_stmt_execute($stmt)) {
-            // Refresh session values
-            $_SESSION['admin_name']  = $name;
-            $_SESSION['admin_email'] = $email;
+            $_SESSION['user_name'] = $name;
             $_SESSION['success'] = "Profile updated successfully.";
             header("Location: profile.php");
             exit;
         } else {
-            $errors[] = 'Unable to update profile (email may already be in use).';
+            $errors[] = 'Unable to update profile. Please try again.';
         }
     }
 }
@@ -64,8 +80,7 @@ if (isset($_SESSION['success'])) {
     unset($_SESSION['success']);
 }
 
-// Initials for the avatar (e.g. "Aa" for "Aarav Alam")
-$nameParts = preg_split('/\s+/', trim($admin['name']));
+$nameParts = preg_split('/\s+/', trim($member['name']));
 $initials = strtoupper(substr($nameParts[0], 0, 1) . (isset($nameParts[1]) ? substr($nameParts[1], 0, 1) : ''));
 ?>
 <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
@@ -75,35 +90,29 @@ $initials = strtoupper(substr($nameParts[0], 0, 1) . (isset($nameParts[1]) ? sub
 <?php if (!empty($errors)): foreach ($errors as $e) flash($e, 'danger'); endif; ?>
 
 <div class="row g-3">
-    <!-- Profile summary card -->
     <div class="col-lg-4">
         <div class="card overflow-hidden">
             <div class="profile-cover"></div>
             <div class="card-body text-center pt-5">
                 <div class="profile-avatar"><?php echo $initials; ?></div>
-                <h4 class="mb-1"><?php echo htmlspecialchars($admin['name']); ?></h4>
-                <p class="text-muted mb-2"><?php echo htmlspecialchars($admin['email']); ?></p>
-                <span class="badge bg-primary mb-3"><i class="bi bi-shield-check me-1"></i>Administrator</span>
+                <h4 class="mb-1"><?php echo htmlspecialchars($member['name']); ?></h4>
+                <p class="text-muted mb-2"><?php echo htmlspecialchars($member['email']); ?></p>
+                <span class="badge bg-success mb-3"><i class="bi bi-person-check me-1"></i>Member</span>
 
                 <hr class="my-3">
 
                 <div class="row text-start small">
-                    <div class="col-6 text-muted">Account ID</div>
-                    <div class="col-6 text-end fw-semibold">#<?php echo (int)$admin['id']; ?></div>
+                    <div class="col-6 text-muted">Member Code</div>
+                    <div class="col-6 text-end fw-semibold"><code><?php echo htmlspecialchars($member['member_code']); ?></code></div>
                     <div class="col-6 text-muted mt-2">Joined</div>
-                    <div class="col-6 text-end mt-2 fw-semibold"><?php echo date('d M Y', strtotime($admin['created_at'])); ?></div>
-                    <div class="col-6 text-muted mt-2">Phone</div>
-                    <div class="col-6 text-end mt-2 fw-semibold"><?php echo htmlspecialchars($admin['phone'] ?? '—'); ?></div>
-                    <div class="col-6 text-muted mt-2">Department</div>
-                    <div class="col-6 text-end mt-2 fw-semibold"><?php echo htmlspecialchars($admin['department'] ?? '—'); ?></div>
-                    <div class="col-6 text-muted mt-2">Role</div>
-                    <div class="col-6 text-end mt-2 fw-semibold">Admin / Librarian</div>
+                    <div class="col-6 text-end mt-2 fw-semibold"><?php echo date('d M Y', strtotime($member['created_at'])); ?></div>
+                    <div class="col-6 text-muted mt-2">Status</div>
+                    <div class="col-6 text-end mt-2 fw-semibold"><?php echo htmlspecialchars($member['status']); ?></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Update form card -->
     <div class="col-lg-8">
         <div class="card">
             <div class="card-header">
@@ -124,11 +133,11 @@ $initials = strtoupper(substr($nameParts[0], 0, 1) . (isset($nameParts[1]) ? sub
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-envelope"></i></span>
                             <input type="email" class="form-control" id="email" name="email"
-                                   value="<?php echo htmlspecialchars($email); ?>" required>
+                                   value="<?php echo htmlspecialchars($email); ?>">
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label for="phone" class="form-label">Phone Number</label>
+                        <label for="phone" class="form-label">Phone</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-telephone"></i></span>
                             <input type="text" class="form-control" id="phone" name="phone"
@@ -136,11 +145,11 @@ $initials = strtoupper(substr($nameParts[0], 0, 1) . (isset($nameParts[1]) ? sub
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label for="department" class="form-label">Department</label>
+                        <label for="address" class="form-label">Address</label>
                         <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-building"></i></span>
-                            <input type="text" class="form-control" id="department" name="department"
-                                   value="<?php echo htmlspecialchars($department); ?>">
+                            <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
+                            <input type="text" class="form-control" id="address" name="address"
+                                   value="<?php echo htmlspecialchars($address); ?>">
                         </div>
                     </div>
                     <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i> Save Changes</button>

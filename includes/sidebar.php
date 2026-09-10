@@ -122,11 +122,13 @@ $addReservationActive = ($currentPage === 'add.php' && $currentDir === 'reservat
                     <i class="bi bi-calendar-check"></i> Reservations
                 </a>
             </li>
+            <?php if ($isAdmin): ?>
             <li class="nav-item">
                 <a class="nav-link<?php echo $addReservationActive; ?>" href="../reservations/add.php">
                     <i class="bi bi-calendar-plus"></i> Add Reservation
                 </a>
             </li>
+            <?php endif; ?>
 
             <?php if ($isAdmin): ?>
             <li class="nav-section">Reports</li>
@@ -148,18 +150,12 @@ $addReservationActive = ($currentPage === 'add.php' && $currentDir === 'reservat
             <?php endif; ?>
 
             <li class="nav-section">Account</li>
-            <?php if ($isAdmin): ?>
             <li class="nav-item">
-                <a class="nav-link<?php echo pageActive('profile.php', $currentPage); ?>" href="../admin/profile.php">
+                <a class="nav-link<?php echo pageActive('profile.php', $currentPage); ?>" href="<?php echo $isAdmin ? '../admin/profile.php' : '../member/profile.php'; ?>">
                     <i class="bi bi-person"></i> Profile
                 </a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link<?php echo pageActive('change-password.php', $currentPage); ?>" href="../admin/change-password.php">
-                    <i class="bi bi-key"></i> Change Password
-                </a>
-            </li>
-            <?php endif; ?>
+        </ul>
         </ul>
     </div>
 
@@ -180,7 +176,7 @@ $addReservationActive = ($currentPage === 'add.php' && $currentDir === 'reservat
             </button>
         </div>
         <div class="topbar-right">
-            <a class="topbar-btn" href="<?php echo $isAdmin ? '../admin/profile.php' : '#'; ?>">
+            <a class="topbar-btn" href="<?php echo $isAdmin ? '../admin/profile.php' : '../member/profile.php'; ?>">
                 <div class="topbar-user">
                     <div class="topbar-avatar"><?php echo $initials; ?></div>
                     <span class="topbar-user-name"><?php echo htmlspecialchars($displayName); ?></span>

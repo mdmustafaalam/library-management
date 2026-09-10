@@ -23,8 +23,16 @@ $sql = "SELECT f.*, m.member_code, m.name AS member_name,
         INNER JOIN transactions t ON f.transaction_id = t.id
         INNER JOIN books b ON t.book_id = b.id";
 
+$where = [];
+if (!$isAdmin) {
+    $memberId = (int)$_SESSION['user_id'];
+    $where[] = "f.member_id = $memberId";
+}
 if ($filter !== 'All') {
-    $sql .= " WHERE f.status = '" . $filter . "'";
+    $where[] = "f.status = '" . $filter . "'";
+}
+if ($where) {
+    $sql .= " WHERE " . implode(" AND ", $where);
 }
 $sql .= " ORDER BY f.id DESC";
 
@@ -68,7 +76,9 @@ if (isset($_SESSION['success'])) {
                         <th>Paid (₹)</th>
                         <th>Balance (₹)</th>
                         <th>Status</th>
+                        <?php if ($isAdmin): ?>
                         <th>Action</th>
+                        <?php endif; ?>
                     </tr>
                 </thead>
                 <tbody>
@@ -98,6 +108,7 @@ if (isset($_SESSION['success'])) {
                                 <td>₹<?php echo number_format((float)$f['paid_amount'], 2); ?></td>
                                 <td>₹<?php echo number_format($balance, 2); ?></td>
                                 <td><span class="badge <?php echo $badge; ?>"><?php echo $f['status']; ?></span></td>
+                                <?php if ($isAdmin): ?>
                                 <td>
                                     <?php if ($f['status'] !== 'Paid'): ?>
                                         <a href="payment.php?id=<?php echo $f['id']; ?>" class="btn btn-sm btn-outline-success">
@@ -107,10 +118,11 @@ if (isset($_SESSION['success'])) {
                                         <span class="text-muted">—</span>
                                     <?php endif; ?>
                                 </td>
+                                <?php endif; ?>
                             </tr>
                         <?php endwhile; ?>
                     <?php else: ?>
-                        <tr><td colspan="11" class="text-center text-muted py-4">No fines found.</td></tr>
+                        <tr><td colspan="<?php echo $isAdmin ? 11 : 10; ?>" class="text-center text-muted py-4">No fines found.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>

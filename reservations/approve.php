@@ -40,6 +40,11 @@ if (!$res) {
 
 switch ($action) {
     case 'approve':
+        if (!$isAdmin) {
+            $_SESSION['success'] = "Only administrators can approve reservations.";
+            header("Location: list.php");
+            exit;
+        }
         // Cannot approve a non-pending reservation
         if ($res['status'] !== 'Pending') {
             $_SESSION['success'] = "Only pending reservations can be approved.";
@@ -59,6 +64,11 @@ switch ($action) {
         break;
 
     case 'reject':
+        if (!$isAdmin) {
+            $_SESSION['success'] = "Only administrators can reject reservations.";
+            header("Location: list.php");
+            exit;
+        }
         if ($res['status'] !== 'Pending') {
             $_SESSION['success'] = "Only pending reservations can be rejected.";
             header("Location: list.php");
@@ -71,6 +81,11 @@ switch ($action) {
         break;
 
     case 'complete':
+        if (!$isAdmin && (int)$res['member_id'] !== (int)$_SESSION['user_id']) {
+            $_SESSION['success'] = "You can only complete your own reservations.";
+            header("Location: list.php");
+            exit;
+        }
         if ($res['status'] !== 'Approved') {
             $_SESSION['success'] = "Only approved reservations can be completed.";
             header("Location: list.php");

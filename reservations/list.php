@@ -21,8 +21,16 @@ $sql = "SELECT r.*, m.member_code, m.name AS member_name,
         INNER JOIN members m ON r.member_id = m.id
         INNER JOIN books b ON r.book_id = b.id";
 
+$where = [];
+if (!$isAdmin) {
+    $memberId = (int)$_SESSION['user_id'];
+    $where[] = "r.member_id = $memberId";
+}
 if ($filter !== 'All') {
-    $sql .= " WHERE r.status = '" . $filter . "'";
+    $where[] = "r.status = '" . $filter . "'";
+}
+if ($where) {
+    $sql .= " WHERE " . implode(" AND ", $where);
 }
 $sql .= " ORDER BY r.id DESC";
 
@@ -39,7 +47,9 @@ if (isset($_SESSION['success'])) {
 
 <div class="d-flex justify-content-between align-items-center flex-wrap">
     <h1 class="page-title mb-3">Reservations</h1>
+    <?php if ($isAdmin): ?>
     <a href="add.php" class="btn btn-primary mb-3"><i class="bi bi-calendar-plus me-1"></i> Add Reservation</a>
+    <?php endif; ?>
 </div>
 
 <!-- Filter tabs -->
@@ -67,7 +77,9 @@ if (isset($_SESSION['success'])) {
                         <th>Available</th>
                         <th>Reservation Date</th>
                         <th>Status</th>
+                        <?php if ($isAdmin): ?>
                         <th>Actions</th>
+                        <?php endif; ?>
                     </tr>
                 </thead>
                 <tbody>
@@ -92,6 +104,7 @@ if (isset($_SESSION['success'])) {
                                 <td><?php echo (int)$r['available_copies']; ?></td>
                                 <td><?php echo date('d M Y', strtotime($r['reservation_date'])); ?></td>
                                 <td><span class="badge <?php echo $badge; ?>"><?php echo $r['status']; ?></span></td>
+                                <?php if ($isAdmin): ?>
                                 <td>
                                     <?php if ($canApprove): ?>
                                         <a href="approve.php?id=<?php echo $r['id']; ?>&action=approve"
@@ -104,11 +117,11 @@ if (isset($_SESSION['success'])) {
                                     <?php if ($r['status'] === 'Approved'): ?>
                                         <a href="approve.php?id=<?php echo $r['id']; ?>&action=complete"
                                            class="btn btn-sm btn-outline-primary" data-confirm="Mark as completed?">Complete</a>
-                                    <?php endif; ?>
-                                    <?php if (!in_array($r['status'], ['Pending', 'Approved'])): ?>
+                                    <?php elseif (!in_array($r['status'], ['Pending', 'Approved'])): ?>
                                         <span class="text-muted">—</span>
                                     <?php endif; ?>
                                 </td>
+                                <?php endif; ?>
                             </tr>
                         <?php endwhile; ?>
                     <?php else: ?>
