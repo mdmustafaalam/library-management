@@ -2,7 +2,9 @@
 // =====================================================
 // config/fine-config.php
 // Central location for the fine rule.
-// Fine is ₹10 per overdue day.
+// Reads from .env file.
 // =====================================================
 
-$finePerDay = 10;
+require_once __DIR__ . '/env.php';
+
+$finePerDay = (int)env('FINE_PER_DAY', '10');

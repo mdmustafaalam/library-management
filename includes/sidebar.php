@@ -2,11 +2,15 @@
 // =====================================================
 // includes/sidebar.php
 // Left navigation menu for all protected pages.
-// Highlights the section the admin is currently viewing.
+// Highlights the section the user is currently viewing.
+// Shows admin-only sections only for admin users.
 // =====================================================
 
 $currentDir  = basename(dirname($_SERVER['SCRIPT_NAME']));
 $currentPage = basename($_SERVER['SCRIPT_NAME']);
+$userType    = $_SESSION['user_type'] ?? 'admin';
+$isAdmin     = ($userType === 'admin');
+$dashboardUrl = $isAdmin ? '../admin/dashboard.php' : '../member/dashboard.php';
 
 // Helper to mark a nav link as active (matches any page inside a directory)
 function activeNav($dir, $currentDir)
@@ -36,7 +40,7 @@ $addReservationActive = ($currentPage === 'add.php' && $currentDir === 'reservat
 
 <!-- Sidebar -->
 <nav class="sidebar" id="sidebar">
-    <a class="sidebar-brand" href="../admin/dashboard.php">
+    <a class="sidebar-brand" href="<?php echo $dashboardUrl; ?>">
         <div class="sidebar-brand-icon">
             <i class="bi bi-book-half"></i>
         </div>
@@ -51,11 +55,12 @@ $addReservationActive = ($currentPage === 'add.php' && $currentDir === 'reservat
 
             <li class="nav-section">Main</li>
             <li class="nav-item">
-                <a class="nav-link<?php echo pageActive('dashboard.php', $currentPage); ?>" href="../admin/dashboard.php">
+                <a class="nav-link<?php echo ($currentPage === 'dashboard.php') ? ' active' : ''; ?>" href="<?php echo $dashboardUrl; ?>">
                     <i class="bi bi-grid-1x2"></i> Dashboard
                 </a>
             </li>
 
+            <?php if ($isAdmin): ?>
             <li class="nav-section">Members</li>
             <li class="nav-item">
                 <a class="nav-link<?php echo $memberListActive; ?>" href="../members/list.php">
@@ -67,6 +72,7 @@ $addReservationActive = ($currentPage === 'add.php' && $currentDir === 'reservat
                     <i class="bi bi-person-plus"></i> Add Member
                 </a>
             </li>
+            <?php endif; ?>
 
             <li class="nav-section">Books</li>
             <li class="nav-item">
@@ -74,28 +80,34 @@ $addReservationActive = ($currentPage === 'add.php' && $currentDir === 'reservat
                     <i class="bi bi-book"></i> Book List
                 </a>
             </li>
+            <?php if ($isAdmin): ?>
             <li class="nav-item">
                 <a class="nav-link<?php echo $addBookActive; ?>" href="../books/add.php">
                     <i class="bi bi-bookmark-plus"></i> Add Book
                 </a>
             </li>
+            <?php endif; ?>
 
+            <?php if ($isAdmin): ?>
             <li class="nav-section">Transactions</li>
             <li class="nav-item">
                 <a class="nav-link<?php echo pageActive('issue-book.php', $currentPage); ?>" href="../transactions/issue-book.php">
                     <i class="bi bi-arrow-right-circle"></i> Issue Book
                 </a>
             </li>
+            <?php endif; ?>
             <li class="nav-item">
                 <a class="nav-link<?php echo pageActive('issued-books.php', $currentPage); ?>" href="../transactions/issued-books.php">
                     <i class="bi bi-list-check"></i> Issued Books
                 </a>
             </li>
+            <?php if ($isAdmin): ?>
             <li class="nav-item">
                 <a class="nav-link<?php echo pageActive('return-book.php', $currentPage); ?>" href="../transactions/return-book.php">
                     <i class="bi bi-arrow-return-left"></i> Return Book
                 </a>
             </li>
+            <?php endif; ?>
 
             <li class="nav-section">Fines</li>
             <li class="nav-item">
@@ -116,6 +128,7 @@ $addReservationActive = ($currentPage === 'add.php' && $currentDir === 'reservat
                 </a>
             </li>
 
+            <?php if ($isAdmin): ?>
             <li class="nav-section">Reports</li>
             <li class="nav-item">
                 <a class="nav-link<?php echo pageActive('overdue.php', $currentPage); ?>" href="../reports/overdue.php">
@@ -132,8 +145,10 @@ $addReservationActive = ($currentPage === 'add.php' && $currentDir === 'reservat
                     <i class="bi bi-receipt"></i> Fine Report
                 </a>
             </li>
+            <?php endif; ?>
 
             <li class="nav-section">Account</li>
+            <?php if ($isAdmin): ?>
             <li class="nav-item">
                 <a class="nav-link<?php echo pageActive('profile.php', $currentPage); ?>" href="../admin/profile.php">
                     <i class="bi bi-person"></i> Profile
@@ -144,6 +159,7 @@ $addReservationActive = ($currentPage === 'add.php' && $currentDir === 'reservat
                     <i class="bi bi-key"></i> Change Password
                 </a>
             </li>
+            <?php endif; ?>
         </ul>
     </div>
 
@@ -164,10 +180,10 @@ $addReservationActive = ($currentPage === 'add.php' && $currentDir === 'reservat
             </button>
         </div>
         <div class="topbar-right">
-            <a class="topbar-btn" href="../admin/profile.php">
+            <a class="topbar-btn" href="<?php echo $isAdmin ? '../admin/profile.php' : '#'; ?>">
                 <div class="topbar-user">
                     <div class="topbar-avatar"><?php echo $initials; ?></div>
-                    <span class="topbar-user-name"><?php echo htmlspecialchars($adminName); ?></span>
+                    <span class="topbar-user-name"><?php echo htmlspecialchars($displayName); ?></span>
                 </div>
             </a>
             <a href="../logout.php" class="topbar-btn btn-danger-outline">

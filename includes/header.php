@@ -8,8 +8,9 @@
 // All protected pages are exactly ONE folder deep, so links use ../ to go to root.
 // The current folder name helps highlight the active nav item.
 $currentDir = basename(dirname($_SERVER['SCRIPT_NAME']));
-$adminName = $_SESSION['admin_name'] ?? 'Admin';
-$initials = strtoupper(substr($adminName, 0, 1));
+$userType = $_SESSION['user_type'] ?? 'admin';
+$displayName = $_SESSION['user_name'] ?? $_SESSION['admin_name'] ?? 'Admin';
+$initials = strtoupper(substr($displayName, 0, 1));
 ?>
 <!DOCTYPE html>
 <html lang="en">

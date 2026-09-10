@@ -1,16 +1,17 @@
 <?php
 // =====================================================
 // config/db.php
-// Connects PHP to the MySQL database (library_management)
-// using MySQLi.
+// Connects PHP to the MySQL database using MySQLi.
 // =====================================================
 
-$host     = "localhost";
-$username = "root";
-$password = "";
-$database = "library_management";
+require_once __DIR__ . '/env.php';
 
-$conn = mysqli_connect($host, $username, $password, $database);
+$conn = mysqli_connect(
+    env('DB_HOST', 'localhost'),
+    env('DB_USERNAME', 'root'),
+    env('DB_PASSWORD', ''),
+    env('DB_NAME', 'library_management')
+);
 
 if (!$conn) {
     die("Database connection failed: " . mysqli_connect_error());

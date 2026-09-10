@@ -1257,3 +1257,30 @@ a:hover {
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
+
+/* ---------- OTP Input ---------- */
+.otp-input {
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 12px;
+    padding-right: 16px;
+    height: 56px;
+    border-radius: 14px;
+    background: #f8fafc;
+    border: 2px solid var(--border-color);
+    transition: var(--transition);
+}
+
+.otp-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
+    background: #fff;
+    letter-spacing: 14px;
+}
+
+.otp-input::placeholder {
+    letter-spacing: 6px;
+    font-weight: 400;
+    color: #cbd5e1;
+}

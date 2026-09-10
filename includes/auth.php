@@ -1,9 +1,10 @@
 <?php
 // =====================================================
 // includes/auth.php
-// Protects admin pages.
+// Protects pages - checks for admin OR member login.
 // - Starts a session
-// - Checks if the admin is logged in ($_SESSION['admin_id'])
+// - Checks $_SESSION['admin_id'] (password login)
+//   or $_SESSION['user_type'] + $_SESSION['user_id'] (OTP login)
 // - Redirects to login.php if not logged in
 // =====================================================
 
@@ -11,7 +12,9 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-if (!isset($_SESSION['admin_id'])) {
+$isLoggedIn = isset($_SESSION['admin_id']) || (isset($_SESSION['user_type']) && isset($_SESSION['user_id']));
+
+if (!$isLoggedIn) {
     header("Location: " . getBaseUrl() . "login.php");
     exit;
 }

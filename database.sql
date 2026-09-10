@@ -98,6 +98,22 @@ CREATE TABLE IF NOT EXISTS reservations (
 );
 
 -- -----------------------------------------------------
+-- Table: otps (one-time password for OTP login)
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS otps (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_type ENUM('admin','member') NOT NULL,
+    user_id INT NOT NULL,
+    email VARCHAR(150) NOT NULL,
+    otp_code VARCHAR(10) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    used TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_email (email),
+    INDEX idx_expiry (expires_at)
+);
+
+-- -----------------------------------------------------
 -- Insert initial admin account
 -- Username / email: admin@library.com
 -- Password: admin123

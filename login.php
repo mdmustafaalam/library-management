@@ -1,48 +1,60 @@
 <?php
 // =====================================================
 // login.php
-// Admin login page.
-// - Connects to the database
-// - Validates email + password using prepared statements
-// - Uses password_verify() to check the password hash
-// - Starts a session on success
+// OTP login page - enter email to receive a one-time password.
 // =====================================================
 
 session_start();
 
 // If already logged in, go straight to dashboard
-if (isset($_SESSION['admin_id'])) {
-    header("Location: admin/dashboard.php");
+if (isset($_SESSION['admin_id']) || (isset($_SESSION['user_type']) && isset($_SESSION['user_id']))) {
+    if (($_SESSION['user_type'] ?? '') === 'member') {
+        header("Location: member/dashboard.php");
+    } else {
+        header("Location: admin/dashboard.php");
+    }
     exit;
 }
 
 require_once 'config/db.php';
+require_once 'config/otp.php';
+require_once 'config/mailer.php';
 
-$error = '';
+$error   = '';
+$email   = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email    = trim($_POST['email'] ?? '');
-    $password = $_POST['password'] ?? '';
+    $email = trim($_POST['email'] ?? '');
 
-    if ($email === '' || $password === '') {
-        $error = 'Please fill in both email and password.';
+    if ($email === '') {
+        $error = 'Please enter your email address.';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = 'Please enter a valid email address.';
     } else {
-        // Fetch the admin by email using a prepared statement
-        $stmt = mysqli_prepare($conn, "SELECT id, name, email, password FROM admins WHERE email = ?");
-        mysqli_stmt_bind_param($stmt, "s", $email);
-        mysqli_stmt_execute($stmt);
-        $result = mysqli_stmt_get_result($stmt);
-        $admin  = mysqli_fetch_assoc($result);
+        $user = findUserByEmail($email);
 
-        // Verify the entered password against the stored hash
-        if ($admin && password_verify($password, $admin['password'])) {
-            $_SESSION['admin_id']    = $admin['id'];
-            $_SESSION['admin_name']  = $admin['name'];
-            $_SESSION['admin_email'] = $admin['email'];
-            header("Location: admin/dashboard.php");
-            exit;
+        if (!$user['found']) {
+            $error = 'No account found with this email address.';
+        } elseif (!canResend($email)) {
+            $error = 'Please wait before requesting a new OTP.';
         } else {
-            $error = 'Invalid email or password.';
+            $otp     = generateOTP();
+            $stored  = storeOTP($user['user_type'], $user['user_id'], $email, $otp);
+
+            if ($stored) {
+                $sent = sendOTP($email, $otp, $user['name']);
+
+                if ($sent) {
+                    $_SESSION['otp_email']      = $email;
+                    $_SESSION['otp_user_type']  = $user['user_type'];
+                    header("Location: otp-verify.php");
+                    exit;
+                } else {
+                    $error = 'Failed to send OTP email. Please try again.';
+                }
+            } else {
+                $error = 'Something went wrong. Please try again.';
+            }
         }
     }
 }
@@ -67,32 +79,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <i class="bi bi-book-half"></i>
             </div>
             <h3>Library Management</h3>
-            <p class="login-subtitle">Admin / Librarian Login</p>
+            <p class="login-subtitle">Enter your email to receive a one-time password</p>
 
             <?php if ($error): ?>
                 <div class="alert alert-danger py-2 mb-3"><?php echo htmlspecialchars($error); ?></div>
             <?php endif; ?>
 
             <form method="POST" action="login.php" novalidate>
-                <div class="mb-3">
-                    <label for="email" class="form-label">Email</label>
+                <div class="mb-4">
+                    <label for="email" class="form-label">Email Address</label>
                     <input type="email" class="form-control" id="email" name="email"
                            placeholder="you@example.com"
-                           value="<?php echo htmlspecialchars($email ?? ''); ?>" required>
-                </div>
-                <div class="mb-4">
-                    <label for="password" class="form-label">Password</label>
-                    <input type="password" class="form-control" id="password" name="password"
-                           placeholder="Enter your password" required>
+                           value="<?php echo htmlspecialchars($email); ?>" required autofocus>
                 </div>
                 <button type="submit" class="btn btn-primary w-100 btn-login">
-                    <i class="bi bi-box-arrow-in-right me-1"></i> Login
+                    <i class="bi bi-envelope-check me-1"></i> Send OTP
                 </button>
             </form>
-
-            <div class="login-footer">
-                <p>Default admin: <code>admin@library.com</code> / <code>admin123</code></p>
-            </div>
         </div>
     </div>
 </body>
